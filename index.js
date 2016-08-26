@@ -8,6 +8,8 @@ let mkdirp = require('mkdirp')
 let pjoin = require('path').join
 
 class DataStore extends EventEmitter {
+  // `name` is the datastore name, it'll be used to infer the filename for
+  // disk persistence.
   constructor (name, opts) {
     super()
 

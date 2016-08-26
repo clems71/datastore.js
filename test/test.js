@@ -51,6 +51,14 @@ describe('#upsert', function () {
     this.db.count().should.be.equal(3)
   })
 
+  it('returned item is always the same', function () {
+    const x = this.db.upsert({
+      text: 'another one!'
+    })
+    const x2 = this.db.findOne(x.id);
+    (x === x2).should.be.ok()
+  })
+
   it('update an existing item if id is set to existing id', function () {
     const x = this.db.upsert({
       id: 2,
