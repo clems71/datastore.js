@@ -1,6 +1,8 @@
 # datastore.js
 
-This project is a basic yet fully functional embedded data storage library. It features:
+This project is a basic yet fully functional embedded data storage library.
+
+It features:
 - automatic persistence to disk, in JSON : *don't worry if your program crashes*
 - a notification system : *get notified if something changes in the datastore*
 - fast lookups, done in memory : *decent performances for small to medium sized stores*
