@@ -71,12 +71,12 @@ class DataStore extends EventEmitter {
 
   // Delete one document given its id
   delete (id) {
-    if (this._store[id]) {
-      delete this._store[id]
-      _.defer(this._dump.bind(this))
-      this.emit('updated')
-      return true
-    }
+    if (!this._store[id]) return false
+
+    delete this._store[id]
+    _.defer(this._dump.bind(this))
+    this.emit('updated')
+    return true
   }
 
   genId () {
