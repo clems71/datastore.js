@@ -33,6 +33,22 @@ describe('#find', function () {
     x.length.should.be.equal(2)
   })
 
+  it('return the correct number of items if filter is {}', function () {
+    const x = this.db.find({})
+    x.length.should.be.equal(2)
+  })
+
+  it('return the proper items if filter is used', function () {
+    const x = this.db.find({ prio: { $gt: 3 } })
+    x.length.should.be.equal(1)
+    x[0].id.should.be.equal(2)
+  })
+
+  it('return immutable values when filter is used', function () {
+    const x = this.db.find({ prio: { $gt: 3 } })
+    x.forEach(i => Object.isFrozen(i).should.be.ok())
+  })
+
   it('return immutable values', function () {
     const x = this.db.find()
     x.forEach(i => Object.isFrozen(i).should.be.ok())

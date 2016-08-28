@@ -5,11 +5,12 @@ This project is a basic yet fully functional embedded data storage library.
 It features:
 - automatic persistence to disk, in JSON : *don't worry if your program crashes*
 - a notification system : *get notified if something changes in the datastore*
-- fast lookups, done in memory : *decent performances for small to medium sized stores*
+- fast 'by key' lookups, done in memory : *decent performances for small to medium sized stores*
+- MongoDB like query filters : *convenient and easy to use*
 - a fully synchronous api
 - fully written in modern JavaScript : *no dependency on XXX library*
 
-It acts more like a key-value store than a full-fledged database, as indexation is made on only one field : `id`, and search is limited to this field.
+It acts more like a key-value store than a full-fledged database, as indexation is made on only one field : `id`. As an extra feature, we provide a MongoDB like search interface, that performs linear scan, so this is not optimized for heavy sets of data.
 
 This store is **optimized for read operations**. Write operations are not extremely fast as they imply a full store rewrite to disk for the moment. *This may change in the near future.*
 
@@ -33,6 +34,7 @@ kvStore.on('updated', () => {
 // we'll generate a crypto secure one for you!
 var myFirstTodo = kvStore.upsert({
   id: 123,
+  done: false,
   what: 'learn how to use datastore.js'
 })
 
@@ -40,11 +42,11 @@ var myFirstTodo = kvStore.upsert({
 console.log(myFirstTodo.meta.created)
 console.log(myFirstTodo.meta.updated)
 
-// look-up by id (the `key`)
+// look-up by id (the `key`) - this is FAST
 var myFirstTodo2 = kvStore.findOne(123)
 
-// return all documents in the store
-var allTodos = kvStore.find()
+// perform a query against the store - this is not optimized as of now
+var allUndoneTodos = kvStore.find({ done: false })
 
 // non-existing document, unknownTodo === undefined
 var unknownTodo = kvStore.findOne('3233')
@@ -59,9 +61,9 @@ var unknownTodo = kvStore.findOne('3233')
   - `path` : set the directory where to store data files
   - `filename` : you can override the filename for this store with this setting
 
-`findOne(id)` : return a document, searched by `id`. If not found, returns `undefined`.
+`findOne(id)` : return a document, searched by `id`. If not found, returns `undefined`. This is the path of code optimized, so accessing elements with this function is **fast**.
 
-`find()` : find all elements, return all documents in store.
+`find([filter])` : find elements matching filter. If `filter` is omitted, it returns all documents. `filter` is a MongoDB compliant query filter. This is a convenience function, and is **not optimized** as of now. Large data sets (10k docs+) can be problematic. It will very soon.
 
 `count()` : return the number of documents in this store.
 
@@ -77,6 +79,7 @@ var unknownTodo = kvStore.findOne('3233')
 
 In each case, it returns the inserted document, with `id` filled properly, and with added meta data.
 
+
 ## To be documented
 
 - meta....
@@ -86,6 +89,5 @@ In each case, it returns the inserted document, with `id` filled properly, and w
 ## Future plans (in no particular order!)
 
 - more possible policies for save to disk
-- indexation on multiple fields
-- more search possibilities
+- auto indexation on all fields, 'a la' elastic search
 - ...

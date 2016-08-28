@@ -6,6 +6,7 @@ let EventEmitter = require('events')
 let fs = require('fs')
 let mkdirp = require('mkdirp')
 let pjoin = require('path').join
+let sift = require('sift')
 
 class DataStore extends EventEmitter {
   // `name` is the datastore name, it'll be used to infer the filename for
@@ -51,8 +52,10 @@ class DataStore extends EventEmitter {
   }
 
   // Return all documents
-  find () {
-    return _.values(this._store)
+  find (filter) {
+    const docs = _.values(this._store)
+    if (!filter) return docs
+    return sift(filter, docs)
   }
 
   count () {
