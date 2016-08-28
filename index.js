@@ -27,9 +27,11 @@ class DataStore extends EventEmitter {
     this._store = {}
     this._load()
 
+    const ids = _.keys(this._store)
+
     // defered so that all subsequent sync code that registered on 'updated'
     // event will be notified of first update
-    _.defer(() => this.emit('updated'))
+    _.defer(() => this.emit('updated', { op: 'loaded', ids }))
   }
 
   _load () {
@@ -63,9 +65,10 @@ class DataStore extends EventEmitter {
   }
 
   clear () {
+    const ids = _.keys(this._store)
     this._store = {}
     _.defer(this._dump.bind(this))
-    this.emit('updated')
+    this.emit('updated', { op: 'deleted', ids })
     return true
   }
 
@@ -75,7 +78,7 @@ class DataStore extends EventEmitter {
 
     delete this._store[id]
     _.defer(this._dump.bind(this))
-    this.emit('updated')
+    this.emit('updated', { op: 'deleted', ids: [id] })
     return true
   }
 
@@ -102,9 +105,10 @@ class DataStore extends EventEmitter {
 
     const newDoc = Object.freeze(_.assign({}, prevDoc, doc))
 
-    this._store[doc.id] = newDoc
+    this._store[newDoc.id] = newDoc
     _.defer(this._dump.bind(this))
-    this.emit('updated')
+    const op = prevDoc ? 'updated' : 'created'
+    this.emit('updated', { op: op, ids: [newDoc.id] })
     return newDoc
   }
 }
