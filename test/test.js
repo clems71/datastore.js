@@ -100,3 +100,19 @@ describe('#findOne', function () {
     Object.isFrozen(x).should.be.ok()
   })
 })
+
+
+describe('#delete', function () {
+  it('return false if doc does not exist', function () {
+    this.db.delete(3).should.not.be.ok()
+  })
+
+  it('return true if doc exists', function () {
+    this.db.delete(2).should.be.ok()
+  })
+
+  it('delete the item properly', function () {
+    this.db.delete(2)
+    this.db.count().should.be.equal(1)
+  })
+})
