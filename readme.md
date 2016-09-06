@@ -54,6 +54,8 @@ var unknownTodo = kvStore.findOne('3233')
 
 ## API
 
+### Document related
+
 `DataStore(name [, opts])` : create a new instance of DataStore.
 
 - `name` is the datastore name, it'll be used to infer the filename for disk persistence.
@@ -79,12 +81,19 @@ var unknownTodo = kvStore.findOne('3233')
 
 In each case, it returns the inserted document, with `id` filled properly, and with added meta data.
 
+### Metadata related
+
+Extra data can be saved by the end-user in the datastore. It is usually used to store extra data like a schema version number. It can be used to manage migration of data inside the store. You can store arbitrary objects in the metadata, but keep in mind this data is not intended to be large. It's more like companion data (few kBs).
+
+`meta([key])` : return a previously saved metadata property
+
+`metaSet(obj)` : save new metadata properties, or update existing if field already exists in metadata. It works the way upsert work, ie, it only perform **additive** update. It won't delete any existing properties. *We may* provide an API for this though.
+
 
 ## To be documented
 
-- meta....
+- per-doc meta-data....
 - event emitter
-
 
 ## Future plans (in no particular order!)
 

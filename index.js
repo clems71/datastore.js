@@ -20,12 +20,18 @@ class DataStore extends EventEmitter {
       filename: _.kebabCase(name) + '.json'
     })
 
+    // helper vars
     this._name = name
     this._dirname = opts.path
     this._filename = opts.filename
     this._fullpath = pjoin(opts.path, opts.filename)
     this._fullpathTmp = pjoin(opts.path, '~' + opts.filename)
+
+    // data containers
     this._store = {}
+    this._meta = {}
+
+    // load all data
     this._load()
 
     const ids = _.keys(this._store)
@@ -35,20 +41,52 @@ class DataStore extends EventEmitter {
     _.defer(() => this.emit('updated', { op: 'loaded', ids }))
   }
 
+  // Load all store content + metadata from disk to in-memory data-structures
   _load () {
     try {
-      const json = fs.readFileSync(this._fullpath, 'utf8')
+      const json = JSON.parse(fs.readFileSync(this._fullpath, 'utf8'))
+      const fileVersion = json.__version__ || 0
+
+      let storeData = {}
+      let metaData = {}
+
+      if (fileVersion === 0) {
+        storeData = json
+      } else if (fileVersion === 1) {
+        storeData = json.storeData
+        metaData = json.metaData
+      }
 
       // we freeze objects so that no one can write changes behind our back!
-      // if they want to, they have to clone
-      this._store = _.mapValues(JSON.parse(json), Object.freeze)
+      // if they want to, they have to clone, so they know nothing changes in
+      // the store. They have to `upsert` to perform a persistent change.
+      this._store = _.mapValues(storeData, Object.freeze)
+      this._meta = Object.freeze(metaData)
     } catch (e) {}
   }
 
+  // Write all store content + metadata to disk
   _dump () {
+    const jsonData = {
+      __version__: 1,
+      storeData: this._store,
+      metaData: this._meta
+    }
+
     mkdirp.sync(this._dirname)
-    fs.writeFileSync(this._fullpathTmp, JSON.stringify(this._store, null, 2))
+    fs.writeFileSync(this._fullpathTmp, JSON.stringify(jsonData, null, 2))
     fs.renameSync(this._fullpathTmp, this._fullpath)
+  }
+
+  // Return store metadata - contains user related data
+  meta (key) {
+    return key ? _.get(this._meta, key) : this._meta
+  }
+
+  metaSet (val) {
+    this._meta = Object.freeze(_.assign({}, this._meta, val))
+    _.defer(this._dump.bind(this))
+    return this._meta
   }
 
   // Return all documents
@@ -58,6 +96,7 @@ class DataStore extends EventEmitter {
     return sift(filter, docs)
   }
 
+  // Return the number of items in this store
   count () {
     return _.size(this._store)
   }
@@ -70,6 +109,7 @@ class DataStore extends EventEmitter {
   clear () {
     const ids = _.keys(this._store)
     this._store = {}
+    this._meta = {}
     _.defer(this._dump.bind(this))
     this.emit('updated', { op: 'deleted', ids })
     return true

@@ -17,12 +17,49 @@ beforeEach(function () {
     text: 'text 2',
     prio: 9
   })
+  this.db.metaSet({
+    version: 23
+  })
+})
+
+describe('#meta', function () {
+  it('return the whole metadata object if no key passed', function () {
+    const meta = this.db.meta()
+    meta.version.should.be.equal(23)
+  })
+
+  it('return the correct metadata property if key is passed', function () {
+    const version = this.db.meta('version')
+    version.should.be.equal(23)
+  })
+})
+
+describe('#metaSet', function () {
+  it('add a new property', function () {
+    this.db.metaSet({ ops: 678 })
+    this.db.meta('ops').should.be.equal(678)
+  })
+
+  it('not alter existing properties', function () {
+    this.db.metaSet({ ops: 678 })
+    this.db.meta('version').should.be.equal(23)
+  })
+
+  it('update existing properties', function () {
+    this.db.metaSet({ version: 12 })
+    this.db.meta('version').should.be.equal(12)
+  })
 })
 
 describe('#clear', function () {
   it('return the correct number of items', function () {
     this.db.clear()
     this.db.count().should.be.equal(0)
+  })
+
+  it('clean metadata', function () {
+    this.db.clear()
+    this.db.meta().should.be.empty()
   })
 })
 
