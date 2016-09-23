@@ -80,6 +80,16 @@ describe('#find', function () {
     x.length.should.be.equal(1)
     x[0].id.should.be.equal(2)
   })
+
+  it('return immutable values when filter is used', function () {
+    const x = this.db.find({ prio: { $gt: 3 } })
+    x.forEach(i => Object.isFrozen(i).should.be.ok())
+  })
+
+  it('return immutable values', function () {
+    const x = this.db.find()
+    x.forEach(i => Object.isFrozen(i).should.be.ok())
+  })
 })
 
 
@@ -92,6 +102,14 @@ describe('#upsert', function () {
     x.id.should.be.a.String()
     x.text.should.be.equal('another one!')
     this.db.count().should.be.equal(3)
+  })
+
+  it('returned item is always the same', function () {
+    const x = this.db.upsert({
+      text: 'another one!'
+    })
+    const x2 = this.db.findOne(x.id);
+    (x === x2).should.be.ok()
   })
 
   it('update an existing item if id is set to existing id', function () {
@@ -128,6 +146,11 @@ describe('#findOne', function () {
   it('return undefined value if not found', function () {
     const x = this.db.findOne('not existing id'); // <- semicolon is important!
     (x === undefined).should.be.ok()
+  })
+
+  it('return an immutable value', function () {
+    const x = this.db.findOne(2)
+    Object.isFrozen(x).should.be.ok()
   })
 })
 
