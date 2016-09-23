@@ -2,6 +2,7 @@
 
 let _ = require('lodash')
 let crypto = require('crypto')
+let freeze = require('deep-freeze')
 let EventEmitter = require('events')
 let fs = require('fs')
 let mkdirp = require('mkdirp')
@@ -60,8 +61,8 @@ class DataStore extends EventEmitter {
       // we freeze objects so that no one can write changes behind our back!
       // if they want to, they have to clone, so they know nothing changes in
       // the store. They have to `upsert` to perform a persistent change.
-      this._store = _.mapValues(storeData, Object.freeze)
-      this._meta = Object.freeze(metaData)
+      this._store = _.mapValues(storeData, freeze)
+      this._meta = freeze(metaData)
     } catch (e) {}
   }
 
@@ -84,7 +85,7 @@ class DataStore extends EventEmitter {
   }
 
   metaSet (val) {
-    this._meta = Object.freeze(_.assign({}, this._meta, val))
+    this._meta = freeze(_.assign({}, this._meta, val))
     _.defer(this._dump.bind(this))
     return this._meta
   }
@@ -146,7 +147,7 @@ class DataStore extends EventEmitter {
       version: _.get(prevDoc, 'meta.version', -1) + 1
     }
 
-    const newDoc = Object.freeze(_.assign({}, prevDoc, doc))
+    const newDoc = freeze(_.assign({}, prevDoc, doc))
 
     this._store[newDoc.id] = newDoc
     _.defer(this._dump.bind(this))
