@@ -2,7 +2,6 @@
 
 let _ = require('lodash')
 let crypto = require('crypto')
-let freeze = require('deep-freeze')
 let EventEmitter = require('events')
 let fs = require('fs')
 let mkdirp = require('mkdirp')
@@ -48,21 +47,12 @@ class DataStore extends EventEmitter {
       const json = JSON.parse(fs.readFileSync(this._fullpath, 'utf8'))
       const fileVersion = json.__version__ || 0
 
-      let storeData = {}
-      let metaData = {}
-
       if (fileVersion === 0) {
-        storeData = json
+        this._store = json
       } else if (fileVersion === 1) {
-        storeData = json.storeData
-        metaData = json.metaData
+        this._store = json.storeData
+        this._meta = json.metaData
       }
-
-      // we freeze objects so that no one can write changes behind our back!
-      // if they want to, they have to clone, so they know nothing changes in
-      // the store. They have to `upsert` to perform a persistent change.
-      this._store = _.mapValues(storeData, freeze)
-      this._meta = freeze(metaData)
     } catch (e) {}
   }
 
@@ -81,20 +71,19 @@ class DataStore extends EventEmitter {
 
   // Return store metadata - contains user related data
   meta (key) {
-    return key ? _.get(this._meta, key) : this._meta
+    return key ? _.cloneDeep(_.get(this._meta, key)) : _.cloneDeep(this._meta)
   }
 
   metaSet (val) {
-    this._meta = freeze(_.assign({}, this._meta, val))
+    this._meta = _.assign({}, this._meta, val)
     _.defer(this._dump.bind(this))
-    return this._meta
   }
 
   // Return all documents
   find (filter) {
     const docs = _.values(this._store)
-    if (!filter) return docs
-    return sift(filter, docs)
+    if (!filter) return _.cloneDeep(docs)
+    return _.cloneDeep(sift(filter, docs))
   }
 
   // Return the number of items in this store
@@ -104,7 +93,7 @@ class DataStore extends EventEmitter {
 
   // Return one document of given id or undefined if not found
   findOne (id) {
-    return this._store[id]
+    return _.cloneDeep(this._store[id])
   }
 
   clear () {
@@ -147,13 +136,13 @@ class DataStore extends EventEmitter {
       version: _.get(prevDoc, 'meta.version', -1) + 1
     }
 
-    const newDoc = freeze(_.assign({}, prevDoc, doc))
+    const newDoc = _.assign({}, prevDoc, doc)
 
     this._store[newDoc.id] = newDoc
     _.defer(this._dump.bind(this))
     const op = prevDoc ? 'updated' : 'created'
     this.emit('updated', { op: op, ids: [newDoc.id] })
-    return newDoc
+    return _.cloneDeep(newDoc)
   }
 }
 
