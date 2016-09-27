@@ -18,7 +18,8 @@ class DataStore extends EventEmitter {
     // !!! clone is absolutely necessary, as the user might use the same opts twice
     opts = _.defaults(_.cloneDeep(opts), {
       path: __dirname + '/datastore',
-      filename: _.kebabCase(name) + '.json'
+      filename: _.kebabCase(name) + '.json',
+      dumpDelay: 5000
     })
 
     // helper vars
@@ -27,6 +28,7 @@ class DataStore extends EventEmitter {
     this._filename = opts.filename
     this._fullpath = pjoin(opts.path, opts.filename)
     this._fullpathTmp = pjoin(opts.path, '~' + opts.filename)
+    this._dumping = false
 
     // data containers
     this._store = {}
@@ -40,6 +42,8 @@ class DataStore extends EventEmitter {
     // defered so that all subsequent sync code that registered on 'updated'
     // event will be notified of first update
     _.defer(() => this.emit('updated', { op: 'loaded', ids }))
+
+    this._queueDump = _.debounce(this.__dump, opts.dumpDelay).bind(this)
   }
 
   // Load all store content + metadata from disk to in-memory data-structures
@@ -67,16 +71,26 @@ class DataStore extends EventEmitter {
   }
 
   // Write all store content + metadata to disk
-  _dump () {
+  __dump () {
+    if (this._dumping) {
+      this._queueDump()
+      return
+    }
+
+    this._dumping = true
+
     const jsonData = {
       __version__: 1,
       storeData: this._store,
       metaData: this._meta
     }
 
+    // TODO: async
     mkdirp.sync(this._dirname)
     fs.writeFileSync(this._fullpathTmp, JSON.stringify(jsonData, null, 2))
     fs.renameSync(this._fullpathTmp, this._fullpath)
+
+    this._dumping = false
   }
 
   // Return store metadata - contains user related data
@@ -86,7 +100,7 @@ class DataStore extends EventEmitter {
 
   metaSet (val) {
     this._meta = freeze(_.assign({}, this._meta, val))
-    _.defer(this._dump.bind(this))
+    this._queueDump()
     return this._meta
   }
 
@@ -111,7 +125,7 @@ class DataStore extends EventEmitter {
     const ids = _.keys(this._store)
     this._store = {}
     this._meta = {}
-    _.defer(this._dump.bind(this))
+    this._queueDump()
     this.emit('updated', { op: 'deleted', ids })
     return true
   }
@@ -121,7 +135,7 @@ class DataStore extends EventEmitter {
     if (!this._store[id]) return false
 
     delete this._store[id]
-    _.defer(this._dump.bind(this))
+    this._queueDump()
     this.emit('updated', { op: 'deleted', ids: [id] })
     return true
   }
@@ -150,7 +164,7 @@ class DataStore extends EventEmitter {
     const newDoc = freeze(_.assign({}, prevDoc, doc))
 
     this._store[newDoc.id] = newDoc
-    _.defer(this._dump.bind(this))
+    this._queueDump()
     const op = prevDoc ? 'updated' : 'created'
     this.emit('updated', { op: op, ids: [newDoc.id] })
     return newDoc
