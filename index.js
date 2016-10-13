@@ -9,7 +9,7 @@ let mkdirp = require('mkdirp')
 let pjoin = require('path').join
 let sift = require('sift')
 
-class DataStore extends EventEmitter {
+class StoreCollection extends EventEmitter {
   // `name` is the datastore name, it'll be used to infer the filename for
   // disk persistence.
   constructor (name, opts) {
@@ -168,6 +168,18 @@ class DataStore extends EventEmitter {
     const op = prevDoc ? 'updated' : 'created'
     this.emit('updated', { op: op, ids: [newDoc.id] })
     return newDoc
+  }
+}
+
+class DataStore {
+  constructor (opts) {
+    this._cols = {}
+    this._opts = opts
+  }
+
+  getCollection (name) {
+    if (!this._cols[name]) this._cols[name] = new StoreCollection(name, this._opts)
+    return this._cols[name]
   }
 }
 
