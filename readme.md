@@ -23,16 +23,17 @@ var DataStore = require('datastore.js')
 
 // will save to ./datastore/todo.json, can be changed through extra
 // opts usage
-var kvStore = new DataStore('todo')
+var db = new DataStore()
+var col = db.getCollection('todo')
 
 // It supports notifications
-kvStore.on('updated', () => {
+col.on('updated', () => {
   console.log('store changed!')
 })
 
 // id is the `key` (as in key-value) and it can be not specified :
 // we'll generate a crypto secure one for you!
-var myFirstTodo = kvStore.upsert({
+var myFirstTodo = col.upsert({
   id: 123,
   done: false,
   what: 'learn how to use datastore.js'
@@ -43,25 +44,27 @@ console.log(myFirstTodo.meta.created)
 console.log(myFirstTodo.meta.updated)
 
 // look-up by id (the `key`) - this is FAST
-var myFirstTodo2 = kvStore.findOne(123)
+var myFirstTodo2 = col.findOne(123)
 
 // perform a query against the store - this is not optimized as of now
-var allUndoneTodos = kvStore.find({ done: false })
+var allUndoneTodos = col.find({ done: false })
 
 // non-existing document, unknownTodo === undefined
-var unknownTodo = kvStore.findOne('3233')
+var unknownTodo = col.findOne('3233')
 ```
 
-## API
+## DataStore API
 
-### Document related
+`DataStore([opts])` : create a new instance of DataStore.
 
-`DataStore(name [, opts])` : create a new instance of DataStore.
-
-- `name` is the datastore name, it'll be used to infer the filename for disk persistence.
 - `opts` is an optional setting object which supports the following fields:
   - `path` : set the directory where to store data files
-  - `filename` : you can override the filename for this store with this setting
+
+`getCollection(name)` : get or create a DataCollection given the collection name.
+
+## DataCollection API
+
+### Document related
 
 `findOne(id)` : return a document, searched by `id`. If not found, returns `undefined`. This is the path of code optimized, so accessing elements with this function is **fast**.
 
