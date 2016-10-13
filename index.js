@@ -177,6 +177,11 @@ class DataStore {
     this._opts = opts
   }
 
+  // List loaded collections
+  listCollections () {
+    return _.keys(this._cols)
+  }
+
   getCollection (name) {
     if (!this._cols[name]) this._cols[name] = new StoreCollection(name, this._opts)
     return this._cols[name]
